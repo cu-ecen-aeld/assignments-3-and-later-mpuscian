@@ -9,16 +9,21 @@
 */
 bool do_system(const char *cmd)
 {
-
+int temp = 0;
+temp = system(cmd);
+if(!temp){
+	return true;
+	}
+else{ 
+	return false;
+    }
+}	
 /*
  * TODO  add your code here
  *  Call the system() function with the command set in the cmd
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
-}
 
 /**
 * @param count -The numbers of variables passed to the function. The variables are command to execute.
@@ -40,6 +45,7 @@ bool do_exec(int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+    
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -58,10 +64,34 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
-
+   
     va_end(args);
 
-    return true;
+    int status = 0;
+    pid_t pid = 0;
+    pid = fork ();
+
+    if (pid < 0)
+    {
+        return false;
+    }
+
+    if (pid == 0)
+    {
+        execv (command[0], command);
+        exit (-1);
+    }
+
+    if (waitpid (pid, &status, 0) < 0)
+    {
+        return false;
+    }
+    
+    if (WIFEXITED (status))
+    {
+        return WEXITSTATUS (status) == 0; 
+    }
+    return false;
 }
 
 /**
@@ -95,5 +125,44 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
     va_end(args);
 
-    return true;
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0) {
+        return false;
+    }
+
+    int status = 0;
+    pid_t pid = 0;
+    pid = fork ();
+
+    if (pid < 0)
+    {
+        close(fd);
+        return false;
+    }
+
+    if (pid == 0)
+    {
+        if (dup2(fd, 1) < 0)
+        {
+            close(fd);
+            return false;
+        }
+
+        close(fd);
+        execv (command[0], command);
+        exit (-1);
+    }
+
+    close(fd);
+    if (waitpid (pid, &status, 0) < 0)
+    {
+        return false;
+    }
+
+    if (WIFEXITED (status))
+    {
+        return WEXITSTATUS (status) == 0; 
+    }
+
+    return false;
 }
