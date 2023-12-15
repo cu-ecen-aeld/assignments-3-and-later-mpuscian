@@ -1,16 +1,17 @@
-CROSS_COMPILE ?= "native"
-.SILENT: default clean
+.PHONY = clean all
 
-default:
-	# echo "$(CROSS_COMPILE)"; \
-	if [ "$(CROSS_COMPILE)" = "aarch64-none-linux-gnu-" ]; then \
-		aarch64-linux-gnu-gcc writer.c -o writer; \
-	elif [ "$(CROSS_COMPILE)" = "native" ]; then \
-		gcc writer.c -o writer; \
-	else \
-		echo "incorrect arguments"; \
-	fi \
+ifdef CROSS_COMPILE
+ifneq ($(CROSS_COMPILE), aarch64-none-linux-gnu-)
+$(error '$(CROSS_COMPILE)' is not supported!)
+endif
+endif
+
+CC = $(CROSS_COMPILE)gcc
+
+all: writer
+
+writer: writer.c
+	${CC} writer.c -o writer
 
 clean:
 	rm -f writer
-	rm -f *.o
